@@ -79,10 +79,15 @@ async function createBackend(projectPath, projectName) {
   const serverPath = path.join(projectPath, 'server');
   const templatesPath = path.join(__dirname, '..', 'templates', 'server');
 
-  // Copier les templates
   fs.copySync(templatesPath, serverPath);
 
-  // Créer le package.json
+  if (fs.existsSync(path.join(serverPath, 'gitignore.txt'))) {
+    fs.renameSync(
+      path.join(serverPath, 'gitignore.txt'),
+      path.join(serverPath, '.gitignore')
+    );
+  }
+
   const packageJson = {
     name: `${projectName}-server`,
     version: '1.0.0',
@@ -116,17 +121,16 @@ async function createBackend(projectPath, projectName) {
       nodemon: '^3.0.1',
       jest: '^29.7.0',
       supertest: '^6.3.3',
-      "@types/jest": '^29.5.5'
+      '@types/jest': '^29.5.5'
     },
     jest: {
-    testEnvironment: 'node',
-    coveragePathIgnorePatterns: ["/node_modules/"]
-  }
+      testEnvironment: 'node',
+      coveragePathIgnorePatterns: ['/node_modules/']
+    }
   };
 
   fs.writeJsonSync(path.join(serverPath, 'package.json'), packageJson, { spaces: 2 });
 
-  // Mettre à jour les packages avec ncu
   spinner.text = 'Mise à jour des packages backend vers les dernières versions...';
   try {
     process.chdir(serverPath);
@@ -143,38 +147,30 @@ async function createFrontend(projectPath, projectName) {
   const clientPath = path.join(projectPath, 'client');
 
   try {
-    // Retourner au dossier du projet
     process.chdir(projectPath);
     
-    // Créer le projet Vite React sans questions interactives
     spinner.text = 'Création du projet Vite...';
     execSync(`npm create vite@latest client -- --template react`, {
-      stdio: 'pipe', // Éviter les prompts
-      input: 'n\nn\n' // Répondre "no" aux deux questions
+      stdio: 'pipe',
+      input: 'n\nn\n'
     });
     
-    // Aller dans client
     process.chdir(clientPath);
 
-    // Créer le fichier .npmrc
     spinner.text = 'Configuration de .npmrc...';
     fs.writeFileSync(path.join(clientPath, '.npmrc'), 'legacy-peer-deps=true\n');
 
-    // Installer les dépendances de base
     spinner.text = 'Installation des dépendances de base...';
     execSync('npm install', { stdio: 'inherit' });
 
-    // Installer Tailwind CSS v4 avec le plugin Vite
     spinner.text = 'Installation de Tailwind CSS...';
     execSync('npm install tailwindcss @tailwindcss/vite', { stdio: 'inherit' });
 
-    // Installer les autres packages
     spinner.text = 'Installation des packages additionnels...';
     execSync('npm install react-router-dom react-hook-form @hookform/resolvers yup react-hot-toast @reduxjs/toolkit react-redux axios', {
       stdio: 'inherit'
     });
 
-    // Mettre à jour les packages avec ncu
     spinner.text = 'Mise à jour des packages vers les dernières versions...';
     try {
       execSync('ncu -u', { stdio: 'inherit' });
@@ -182,7 +178,6 @@ async function createFrontend(projectPath, projectName) {
       spinner.warn('Packages installés (certaines mises à jour ont échoué)');
     }
 
-    // Créer le fichier jsconfig.json
     spinner.text = 'Configuration de jsconfig.json...';
     const jsconfigContent = {
       files: [],
@@ -196,14 +191,12 @@ async function createFrontend(projectPath, projectName) {
     };
     fs.writeJsonSync(path.join(clientPath, 'jsconfig.json'), jsconfigContent, { spaces: 2 });
 
-    // Modifier le vite.config.js
     spinner.text = 'Configuration de Vite...';
     const viteConfig = `import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -215,21 +208,17 @@ export default defineConfig({
 `;
     fs.writeFileSync(path.join(clientPath, 'vite.config.js'), viteConfig);
 
-    // Modifier le index.css
     spinner.text = 'Configuration de Tailwind CSS...';
     const indexCss = `@import "tailwindcss";
 `;
     fs.writeFileSync(path.join(clientPath, 'src/index.css'), indexCss);
 
-    // Prévenir l'utilisateur avant shadcn
     console.log(chalk.cyan('\n📦 Initialisation de shadcn/ui...'));
     console.log(chalk.yellow('⚠️  Vous allez être invité à choisir une couleur de base.'));
     console.log(chalk.white('   Recommandation: choisissez "Neutral" ou "Slate"\n'));
     
-    // Attendre 2 secondes pour que l'utilisateur lise
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Initialiser shadcn/ui
     spinner.text = 'Initialisation de shadcn/ui...';
     try {
       execSync('npx shadcn@latest init -y', { 
@@ -241,7 +230,6 @@ export default defineConfig({
       console.log(chalk.cyan('Vous devrez peut-être exécuter manuellement: npx shadcn@latest init\n'));
     }
 
-    // Ajouter les composants shadcn nécessaires
     spinner.text = 'Installation des composants shadcn/ui...';
     try {
       execSync('npx shadcn@latest add button input label card -y', { 
@@ -253,13 +241,11 @@ export default defineConfig({
       console.log(chalk.cyan('Vous devrez peut-être exécuter manuellement: npx shadcn@latest add button input label card\n'));
     }
 
-    // Copier les templates frontend (TOUTE la structure)
     spinner.text = 'Copie des templates frontend...';
     const frontendTemplatesPath = path.join(__dirname, '..', 'templates', 'client');
     if (fs.existsSync(frontendTemplatesPath)) {
       const srcPath = path.join(frontendTemplatesPath, 'src');
       if (fs.existsSync(srcPath)) {
-        // Copier TOUS les dossiers dans src
         const foldersToCreate = ['api', 'pages', 'store', 'slices', 'schemas', 'lib'];
         foldersToCreate.forEach(folder => {
           const sourcePath = path.join(srcPath, folder);
@@ -269,7 +255,6 @@ export default defineConfig({
           }
         });
 
-        // Copier App.jsx et main.jsx
         ['App.jsx', 'main.jsx'].forEach(file => {
           const sourceFile = path.join(srcPath, file);
           const destFile = path.join(clientPath, 'src', file);
@@ -279,10 +264,16 @@ export default defineConfig({
         });
       }
 
-      // Copier .env.example
       const envExample = path.join(frontendTemplatesPath, '.env.example');
       if (fs.existsSync(envExample)) {
         fs.copySync(envExample, path.join(clientPath, '.env.example'));
+      }
+
+      if (fs.existsSync(path.join(clientPath, 'npmrc.txt'))) {
+        fs.renameSync(
+          path.join(clientPath, 'npmrc.txt'),
+          path.join(clientPath, '.npmrc')
+        );
       }
     }
 
