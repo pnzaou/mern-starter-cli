@@ -1,5 +1,18 @@
 #!/usr/bin/env node
 
+/**
+ * CLI MERN Generator
+ * ------------------
+ * Outil en ligne de commande permettant de générer automatiquement
+ * un projet MERN complet (Backend Express + Frontend React/Vite).
+ *
+ * - Initialisation du projet
+ * - Création du backend
+ * - Création du frontend
+ * - Mise à jour des dépendances
+ */
+
+
 const { Command } = require('commander');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
@@ -14,6 +27,17 @@ program
   .version('1.0.0')
   .description('CLI pour créer un projet MERN stack complet');
 
+/**
+ * Commande `create`
+ * -----------------
+ * Point d’entrée principal du CLI.
+ *
+ * Responsabilités :
+ * - Vérifier les dépendances globales nécessaires
+ * - Demander le nom du projet
+ * - Créer l’arborescence du projet
+ * - Initialiser le backend et le frontend
+ */
 program
   .command('create')
   .description('Créer un nouveau projet MERN')
@@ -73,6 +97,18 @@ program
     }
   });
 
+
+  /**
+ * Crée et configure la partie backend du projet MERN.
+ *
+ * - Copie les templates serveur
+ * - Génère le package.json backend
+ * - Configure les scripts et dépendances
+ * - Met à jour les packages via npm-check-updates
+ *
+ * @param {string} projectPath Chemin racine du projet
+ * @param {string} projectName Nom du projet
+ */
 async function createBackend(projectPath, projectName) {
   const spinner = ora('Création du backend...').start();
   
@@ -141,6 +177,17 @@ async function createBackend(projectPath, projectName) {
   }
 }
 
+/**
+ * Crée et configure la partie frontend du projet MERN.
+ *
+ * - Génère un projet React avec Vite
+ * - Installe Tailwind CSS et dépendances courantes
+ * - Configure Vite et les alias
+ * - Initialise shadcn/ui et ses composants
+ *
+ * @param {string} projectPath Chemin racine du projet
+ * @param {string} projectName Nom du projet
+ */
 async function createFrontend(projectPath, projectName) {
   const spinner = ora('Création du frontend avec Vite...').start();
   
@@ -284,4 +331,9 @@ export default defineConfig({
   }
 }
 
+
+/**
+ * Lance l’exécution du CLI
+ * Analyse les arguments passés en ligne de commande
+ */
 program.parse(process.argv);
