@@ -1,0 +1,20 @@
+# .npmignore - Contrôle ce qui est EXCLU de npm (le reste est inclus)
+
+# Exclure seulement ce qui n'est pas nécessaire
+node_modules/
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Projets de test locaux
+test-*/
+demo-*/
+example-*/
+
+# Fichiers de dev
+.eslintrc*
+.prettierrc*
+
+# NE PAS exclure .gitignore, .npmrc, etc. dans templates/
+# Ils seront automatiquement inclus
