@@ -1,0 +1,54 @@
+{
+  "name": "mern-starter-cli",
+  "version": "1.0.0",
+  "description": "CLI pour scaffolder un projet MERN complet avec auth, DTOs, tests et design moderne",
+  "main": "bin/cli.js",
+  "bin": {
+    "mern-cli": "./bin/cli.js",
+    "mern-starter-cli": "./bin/cli.js"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mern",
+    "cli",
+    "react",
+    "express",
+    "mongodb",
+    "nodejs",
+    "tailwind",
+    "redux",
+    "jwt",
+    "authentication",
+    "fullstack",
+    "scaffold",
+    "boilerplate",
+    "starter"
+  ],
+  "author": "Perrin Emmanuel NZAOU",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pnzaou/mern-starter-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pnzaou/mern-starter-cli/issues"
+  },
+  "homepage": "https://github.com/pnzaou/mern-starter-cli#readme",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^14.0.3",
+    "fs-extra": "^11.3.3",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1"
+  },
+  "peerDependencies": {
+    "npm-check-updates": ">=19.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=11.0.0"
+  }
+}

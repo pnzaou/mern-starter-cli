@@ -1,0 +1,296 @@
+#!/usr/bin/env node
+
+const { Command } = require('commander');
+const inquirer = require('inquirer');
+const chalk = require('chalk');
+const ora = require('ora');
+const fs = require('fs-extra');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const program = new Command();
+
+program
+  .version('1.0.0')
+  .description('CLI pour créer un projet MERN stack complet');
+
+program
+  .command('create')
+  .description('Créer un nouveau projet MERN')
+  .action(async () => {
+    try {
+      // Vérifier si ncu est installé
+      try {
+        execSync('ncu --version', { stdio: 'ignore' });
+      } catch (error) {
+        console.log(chalk.yellow('\n⚠️  npm-check-updates n\'est pas installé.'));
+        console.log(chalk.cyan('Installation en cours...\n'));
+        execSync('npm install -g npm-check-updates', { stdio: 'inherit' });
+      }
+
+      // Demander le nom du projet
+      const answers = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'projectName',
+          message: 'Quel est le nom de votre projet ?',
+          validate: (input) => {
+            if (/^([A-Za-z\-\_\d])+$/.test(input)) return true;
+            else return 'Le nom du projet ne peut contenir que des lettres, chiffres, tirets et underscores';
+          }
+        }
+      ]);
+
+      const projectName = answers.projectName;
+      const projectPath = path.join(process.cwd(), projectName);
+
+      // Vérifier si le dossier existe déjà
+      if (fs.existsSync(projectPath)) {
+        console.log(chalk.red(`❌ Le dossier ${projectName} existe déjà!`));
+        return;
+      }
+
+      console.log(chalk.cyan(`\n🚀 Création du projet ${projectName}...\n`));
+
+      // Créer la structure de base
+      fs.mkdirSync(projectPath);
+      fs.mkdirSync(path.join(projectPath, 'client'));
+      fs.mkdirSync(path.join(projectPath, 'server'));
+
+      // Créer le backend
+      await createBackend(projectPath, projectName);
+
+      // Créer le frontend
+      await createFrontend(projectPath, projectName);
+
+      console.log(chalk.green(`\n✅ Projet ${projectName} créé avec succès!\n`));
+      console.log(chalk.cyan('Pour démarrer:'));
+      console.log(chalk.white(`  cd ${projectName}/server && npm install && npm run dev`));
+      console.log(chalk.white(`  cd ${projectName}/client && npm install && npm run dev`));
+
+    } catch (error) {
+      console.error(chalk.red('Erreur:', error.message));
+    }
+  });
+
+async function createBackend(projectPath, projectName) {
+  const spinner = ora('Création du backend...').start();
+  
+  const serverPath = path.join(projectPath, 'server');
+  const templatesPath = path.join(__dirname, '..', 'templates', 'server');
+
+  // Copier les templates
+  fs.copySync(templatesPath, serverPath);
+
+  // Créer le package.json
+  const packageJson = {
+    name: `${projectName}-server`,
+    version: '1.0.0',
+    description: 'Backend MERN',
+    main: 'src/server.js',
+    scripts: {
+      start: 'node src/server.js',
+      dev: 'nodemon src/server.js',
+      test: 'jest --watchAll --verbose',
+      'test:coverage': 'jest --coverage'
+    },
+    dependencies: {
+      express: '^4.18.2',
+      mongoose: '^8.0.0',
+      dotenv: '^16.3.1',
+      cors: '^2.8.5',
+      helmet: '^7.1.0',
+      bcryptjs: '^2.4.3',
+      jsonwebtoken: '^9.0.2',
+      'express-validator': '^7.0.1',
+      morgan: '^1.10.0',
+      compression: '^1.7.4',
+      'swagger-jsdoc': '^6.2.8',
+      'swagger-ui-express': '^5.0.0',
+      csurf: '^1.11.0',
+      'cookie-parser': '^1.4.6',
+      resend: '^3.0.0',
+      crypto: '^1.0.1'
+    },
+    devDependencies: {
+      nodemon: '^3.0.1',
+      jest: '^29.7.0',
+      supertest: '^6.3.3',
+      "@types/jest": '^29.5.5'
+    },
+    jest: {
+    testEnvironment: 'node',
+    coveragePathIgnorePatterns: ["/node_modules/"]
+  }
+  };
+
+  fs.writeJsonSync(path.join(serverPath, 'package.json'), packageJson, { spaces: 2 });
+
+  // Mettre à jour les packages avec ncu
+  spinner.text = 'Mise à jour des packages backend vers les dernières versions...';
+  try {
+    process.chdir(serverPath);
+    execSync('ncu -u', { stdio: 'inherit' });
+    spinner.succeed('Backend créé avec les packages à jour!');
+  } catch (error) {
+    spinner.warn('Backend créé (erreur lors de la mise à jour des packages)');
+  }
+}
+
+async function createFrontend(projectPath, projectName) {
+  const spinner = ora('Création du frontend avec Vite...').start();
+  
+  const clientPath = path.join(projectPath, 'client');
+
+  try {
+    // Retourner au dossier du projet
+    process.chdir(projectPath);
+    
+    // Créer le projet Vite React sans questions interactives
+    spinner.text = 'Création du projet Vite...';
+    execSync(`npm create vite@latest client -- --template react`, {
+      stdio: 'pipe', // Éviter les prompts
+      input: 'n\nn\n' // Répondre "no" aux deux questions
+    });
+    
+    // Aller dans client
+    process.chdir(clientPath);
+
+    // Créer le fichier .npmrc
+    spinner.text = 'Configuration de .npmrc...';
+    fs.writeFileSync(path.join(clientPath, '.npmrc'), 'legacy-peer-deps=true\n');
+
+    // Installer les dépendances de base
+    spinner.text = 'Installation des dépendances de base...';
+    execSync('npm install', { stdio: 'inherit' });
+
+    // Installer Tailwind CSS v4 avec le plugin Vite
+    spinner.text = 'Installation de Tailwind CSS...';
+    execSync('npm install tailwindcss @tailwindcss/vite', { stdio: 'inherit' });
+
+    // Installer les autres packages
+    spinner.text = 'Installation des packages additionnels...';
+    execSync('npm install react-router-dom react-hook-form @hookform/resolvers yup react-hot-toast @reduxjs/toolkit react-redux axios', {
+      stdio: 'inherit'
+    });
+
+    // Mettre à jour les packages avec ncu
+    spinner.text = 'Mise à jour des packages vers les dernières versions...';
+    try {
+      execSync('ncu -u', { stdio: 'inherit' });
+    } catch (error) {
+      spinner.warn('Packages installés (certaines mises à jour ont échoué)');
+    }
+
+    // Créer le fichier jsconfig.json
+    spinner.text = 'Configuration de jsconfig.json...';
+    const jsconfigContent = {
+      files: [],
+      references: [],
+      compilerOptions: {
+        baseUrl: '.',
+        paths: {
+          '@/*': ['./src/*']
+        }
+      }
+    };
+    fs.writeJsonSync(path.join(clientPath, 'jsconfig.json'), jsconfigContent, { spaces: 2 });
+
+    // Modifier le vite.config.js
+    spinner.text = 'Configuration de Vite...';
+    const viteConfig = `import path from "path"
+import tailwindcss from "@tailwindcss/vite"
+import react from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+})
+`;
+    fs.writeFileSync(path.join(clientPath, 'vite.config.js'), viteConfig);
+
+    // Modifier le index.css
+    spinner.text = 'Configuration de Tailwind CSS...';
+    const indexCss = `@import "tailwindcss";
+`;
+    fs.writeFileSync(path.join(clientPath, 'src/index.css'), indexCss);
+
+    // Prévenir l'utilisateur avant shadcn
+    console.log(chalk.cyan('\n📦 Initialisation de shadcn/ui...'));
+    console.log(chalk.yellow('⚠️  Vous allez être invité à choisir une couleur de base.'));
+    console.log(chalk.white('   Recommandation: choisissez "Neutral" ou "Slate"\n'));
+    
+    // Attendre 2 secondes pour que l'utilisateur lise
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Initialiser shadcn/ui
+    spinner.text = 'Initialisation de shadcn/ui...';
+    try {
+      execSync('npx shadcn@latest init -y', { 
+        stdio: 'inherit',
+        env: { ...process.env, FORCE_COLOR: '1' }
+      });
+    } catch (error) {
+      console.log(chalk.yellow('\n⚠️  Erreur lors de l\'initialisation automatique de shadcn'));
+      console.log(chalk.cyan('Vous devrez peut-être exécuter manuellement: npx shadcn@latest init\n'));
+    }
+
+    // Ajouter les composants shadcn nécessaires
+    spinner.text = 'Installation des composants shadcn/ui...';
+    try {
+      execSync('npx shadcn@latest add button input label card -y', { 
+        stdio: 'inherit',
+        env: { ...process.env, FORCE_COLOR: '1' }
+      });
+    } catch (error) {
+      console.log(chalk.yellow('\n⚠️  Erreur lors de l\'ajout des composants shadcn'));
+      console.log(chalk.cyan('Vous devrez peut-être exécuter manuellement: npx shadcn@latest add button input label card\n'));
+    }
+
+    // Copier les templates frontend (TOUTE la structure)
+    spinner.text = 'Copie des templates frontend...';
+    const frontendTemplatesPath = path.join(__dirname, '..', 'templates', 'client');
+    if (fs.existsSync(frontendTemplatesPath)) {
+      const srcPath = path.join(frontendTemplatesPath, 'src');
+      if (fs.existsSync(srcPath)) {
+        // Copier TOUS les dossiers dans src
+        const foldersToCreate = ['api', 'pages', 'store', 'slices', 'schemas', 'lib'];
+        foldersToCreate.forEach(folder => {
+          const sourcePath = path.join(srcPath, folder);
+          const destPath = path.join(clientPath, 'src', folder);
+          if (fs.existsSync(sourcePath)) {
+            fs.copySync(sourcePath, destPath, { overwrite: true });
+          }
+        });
+
+        // Copier App.jsx et main.jsx
+        ['App.jsx', 'main.jsx'].forEach(file => {
+          const sourceFile = path.join(srcPath, file);
+          const destFile = path.join(clientPath, 'src', file);
+          if (fs.existsSync(sourceFile)) {
+            fs.copySync(sourceFile, destFile, { overwrite: true });
+          }
+        });
+      }
+
+      // Copier .env.example
+      const envExample = path.join(frontendTemplatesPath, '.env.example');
+      if (fs.existsSync(envExample)) {
+        fs.copySync(envExample, path.join(clientPath, '.env.example'));
+      }
+    }
+
+    spinner.succeed('Frontend créé avec shadcn/ui!');
+  } catch (error) {
+    spinner.fail('Erreur lors de la création du frontend');
+    throw error;
+  }
+}
+
+program.parse(process.argv);

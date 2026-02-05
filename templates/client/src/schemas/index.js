@@ -1,0 +1,6 @@
+export { loginSchema } from "./login.schema"
+export { registerSchema } from "./register.schema"
+export { forgotPasswordSchema } from "./forgotPassword.schema"
+export { resetPasswordSchema } from "./resetPassword.schema"
+export { profileSchema } from "./profile.schema"
+export { passwordSchema } from "./password.schema"
