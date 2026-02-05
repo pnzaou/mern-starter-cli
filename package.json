@@ -9,7 +9,10 @@
   },
   "files": [
     "bin/",
-    "templates/",
+    "templates/**/*",
+    "templates/**/.gitignore",
+    "templates/**/.npmrc",
+    "templates/**/.env.example",
     "README.md",
     "LICENSE"
   ],
